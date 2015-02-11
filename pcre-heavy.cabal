@@ -1,6 +1,6 @@
 name:            pcre-heavy
-version:         0.0.0
-synopsis:        Finally, a regular expression (regexp) library on top of pcre-light you can actually use. Includes =~, gsub (replacement).
+version:         0.1.0
+synopsis:        A regexp library on top of pcre-light you can actually use.
 description:     https://github.com/myfreeweb/pcre-heavy
 category:        Web
 homepage:        https://github.com/myfreeweb/pcre-heavy
