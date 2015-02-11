@@ -3,7 +3,7 @@
 *Finally!* A Haskell regular expressions library that does not suck.
 
 - based on [pcre-light], none of that regex-compat-pluggable-backend stuff
-- takes [Stringables] everywhere, use ANY STRING TYPE (String, ByteString, LByteString, Text, LText, FilePath)
+- takes and returns [Stringables] everywhere, use ANY STRING TYPE (String, ByteString, LByteString, Text, LText, FilePath) -- but you need a bit more type annotations than usual
 - a QuasiQuoter for regexps that does compile time checking (BTW, [vim2hs] has correct syntax highlighting for that!)
 - **SEARCHES FOR MULTIPLE MATCHES! DOES REPLACEMENT!**
 
@@ -53,8 +53,21 @@ Just ["https://unrelenting.technology","unrelenting"]
 `sub` replaces the first match, `gsub` replaces all matches.
 
 ```haskell
->>> gsub [re|%(\d+)(\w+)|] (\(d:w:_) -> "{" ++ d ++ " of " ++ w ++ "}" :: String) "Hello, %20thing" :: String
+-- You can use a Stringable type as the replacement...
+>>> gsub [re|\d+|] "!!!NUMBER!!!" "Copyright (c) 2015 The 000 Group"
+"Copyright (c) !!!NUMBER!!! The !!!NUMBER!!! Group"
+
+-- or a (Stringable a => [a] -> a) function -- that will get the groups...
+>>> gsub [re|%(\d+)(\w+)|] (\(d:w:_) -> "{" ++ d ++ " of " ++ w ++ "}" :: String) "Hello, %20thing"
 "Hello, {20 of thing}"
+
+-- or a (Stringable a => a -> a) function -- that will get the full match...
+>>> gsub [re|-\w+|] (\x -> "+" ++ (reverse $ drop 1 x) :: String) "hello -world"
+"hello +dlrow"
+
+-- or a (Stringable a => a -> [a] -> a) function.
+-- That will get both the full match and the groups.
+-- I have no idea why you would want to use that, but that's there :-)
 ```
 
 ## License
