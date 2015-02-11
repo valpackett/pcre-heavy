@@ -18,9 +18,10 @@ module Text.Regex.PCRE.Heavy (
   -- * QuasiQuoter
 , re
 , mkRegexQQ
-  -- * Types from pcre-light
+  -- * Types and stuff from pcre-light
 , Regex
 , PCREOption
+, PCRE.compileM
   -- * Advanced raw stuff
 , rawMatch
 , rawSub
@@ -190,8 +191,8 @@ instance Lift PCREOption where
   lift o = [| o |]
 
 quoteExpRegex :: [PCREOption] -> String -> ExpQ
-quoteExpRegex opts txt = [| PCRE.compile (BS.pack txt) opts |]
-  where !_ = PCRE.compile (BS.pack txt) opts -- check at compile time
+quoteExpRegex opts txt = [| PCRE.compile (toByteString txt) opts |]
+  where !_ = PCRE.compile (toByteString txt) opts -- check at compile time
 
 -- | Returns a QuasiQuoter like 're', but with given PCRE options.
 mkRegexQQ :: [PCREOption] -> QuasiQuoter

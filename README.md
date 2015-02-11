@@ -70,6 +70,16 @@ Just ["https://unrelenting.technology","unrelenting"]
 -- I have no idea why you would want to use that, but that's there :-)
 ```
 
+### Options
+
+You can pass `pcre-light` options like this:
+
+```haskell
+>>> let myRe = mkRegexQQ [multiline, utf8, ungreedy]
+>>> scanO [myRe|\s*entry (\d+) (\w+)\s*&?|] [exec_no_utf8_check] " entry 1 hello  &entry 2 hi" :: [[String]]
+>>> gsubO [myRe|\d+|] [exec_notempty] "!!!NUMBER!!!" "Copyright (c) 2015 The 000 Group"
+```
+
 ## License
 
 Copyright 2015 Greg V <greg@unrelenting.technology>  
