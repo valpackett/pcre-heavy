@@ -22,11 +22,18 @@ let isUrl = "https://unrelenting.technology" =~ [re|^http.*|] :: Bool
 -- In an `if`, you don't even need the annotation:
 putStrLn $ if "https://unrelenting.technology" =~ [re|^http.*|] then "YEP" else "NOPE"
 
--- Extracting matches:
--- (Note: You can use any string type, not just String)
+-- Extracting matches: (Note: You can use any string type, not just String)
 let domain = "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe [String]
--- Just ["https://unrelenting.technology","unrelenting"]
+-- returns
+Just ["https://unrelenting.technology","unrelenting"]
 
+-- Multiple matches (also called search, scan):
+let entries = scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi" :: [[String]]
+-- returns
+[
+  [" entry 1 hello  &", "1", "hello"]
+, ["entry 2 hi",        "2", "hi"]
+]
 ```
 
 ## License
