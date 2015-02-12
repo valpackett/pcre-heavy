@@ -34,6 +34,7 @@ import qualified Text.Regex.PCRE.Light as PCRE
 import           Text.Regex.PCRE.Light.Base
 import           Control.Applicative ((<$>))
 import           Data.Maybe (isJust, fromMaybe)
+import           Data.List (unfoldr)
 import           Data.Stringable
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
@@ -47,49 +48,15 @@ behead :: [a] -> (a, [a])
 behead (h:t) = (h, t)
 behead [] = error "no head to behead"
 
-class RegexResult a where
-  fromResult :: Maybe [BS.ByteString] -> a
+reMatch :: Stringable a => Regex -> a -> Bool
+reMatch r s = isJust $ PCRE.match r (toByteString s) []
 
-instance RegexResult (Maybe [BS.ByteString]) where
-  fromResult = id
-
-instance RegexResult (Maybe (BS.ByteString, [BS.ByteString])) where
-  fromResult = fmap behead
-
-instance Stringable a => RegexResult (Maybe a) where
-  fromResult x = head <$> map fromByteString <$> x
-
-instance Stringable a => RegexResult (Maybe (a, [a])) where
-  fromResult x = behead <$> map fromByteString <$> x
-
-instance RegexResult Bool where
-  fromResult = isJust
-
-reMatch :: (Stringable a, RegexResult b) => Regex -> a -> b
-reMatch r s = fromResult $ PCRE.match r (toByteString s) []
-
--- | Matches a string with a regex.
---
--- You can cast the result to:
--- - Bool
--- - Stringable a => Maybe a -- note, this won't work for String, which is [Char]
--- - Stringable a => Maybe (a, [a])
---
--- This operator only finds the first match and its groups.
--- Use 'scan' to find all matches.
---
--- Note: if casts to bool automatically.
+-- | Checks whether a string matches a regex.
 --
 -- >>> :set -XQuasiQuotes
--- >>> "https://unrelenting.technology" =~ [re|^http.*|] :: Bool
+-- >>> "https://unrelenting.technology" =~ [re|^http.*|]
 -- True
--- >>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe BS.ByteString
--- Just "https://unrelenting.technology"
--- >>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe (String, [String])
--- Just ("https://unrelenting.technology",["unrelenting"])
--- >>> if "https://unrelenting.technology" =~ [re|^http.*|] then "YEP" else "NOPE"
--- "YEP"
-(=~) :: (Stringable a, RegexResult b) => a -> Regex -> b
+(=~) :: Stringable a => a -> Regex -> Bool
 (=~) = flip reMatch
 
 -- | Does raw PCRE matching (you probably shouldn't use this directly).
@@ -126,18 +93,24 @@ rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
 --
 -- >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
 -- [(" entry 1 hello  &",["1","hello"]),("entry 2 hi",["2","hi"])]
+--
+-- It is lazy! If you only need the first match, just apply 'head' (or
+-- 'headMay' from the 'safe' package) -- no extra work will be performed!
+--
+-- >>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+-- (" entry 1 hello  &",["1","hello"])
 scan :: (Stringable a) => Regex -> a -> [(a, [a])]
 scan r s = scanO r [] s
 
 -- | Exactly like 'scan', but passes runtime options to PCRE.
 scanO :: (Stringable a) => Regex -> [PCREExecOption] -> a -> [(a, [a])]
-scanO r opts s = map behead $ map fromByteString <$> loop 0 []
+scanO r opts s = map behead $ map fromByteString <$> unfoldr nextMatch 0
   where str = toByteString s
-        loop offset acc =
+        nextMatch offset =
           case rawMatch r str offset opts of
-            Nothing -> reverse acc
-            Just [] -> reverse acc
-            Just ms -> loop (maximum $ map snd ms) ((map (substr str) ms) : acc)
+            Nothing -> Nothing
+            Just [] -> Nothing
+            Just ms -> Just (map (substr str) ms, maximum $ map snd ms)
 
 class RegexReplacement a where
   performReplacement :: BS.ByteString -> [BS.ByteString] -> a -> BS.ByteString
@@ -204,10 +177,11 @@ gsubO r opts t s = fromByteString $ loop 0 str
             _ -> acc
 
 instance Lift PCREOption where
+  -- well, the constructor isn't exported, but at least it implements Read/Show :D
   lift o = let o' = show o in [| read o' :: PCREOption |]
 
 quoteExpRegex :: [PCREOption] -> String -> ExpQ
-quoteExpRegex opts txt = [| PCRE.compile (toByteString txt) opts |]
+quoteExpRegex opts txt = [| PCRE.compile (toByteString (txt :: String)) opts |]
   where !_ = PCRE.compile (toByteString txt) opts -- check at compile time
 
 -- | Returns a QuasiQuoter like 're', but with given PCRE options.

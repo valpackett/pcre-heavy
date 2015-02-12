@@ -18,35 +18,36 @@
 import           Text.Regex.PCRE.Heavy
 ```
 
-### Matching
+### Checking
 
 ```haskell
->>> "https://unrelenting.technology" =~ [re|^http.*|] :: Bool
+>>> "https://unrelenting.technology" =~ [re|^http.*|]
 True
 ```
 
-In an `if`, you don't even need the annotation:
+### Matching (Searching)
+
+(You can use any string type, not just String!)
+
+`scan` returns all matches as pairs like `(fullmatch, [group, group...])`.
 
 ```haskell
-if "https://unrelenting.technology" =~ [re|^http.*|] then "YEP" else "NOPE"
-```
-
-Extracting matches (You can use any string type, not just String)
-
-```haskell
->>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe (String, [String])
-Just ("https://unrelenting.technology", ["unrelenting"])
-```
-
-`scan` returns all matches (search)
-
-```haskell
->>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi" :: [[String]]
+>>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi" :: [(String, [String])]
 [
   (" entry 1 hello  &", ["1", "hello"])
 , ("entry 2 hi",        ["2", "hi"])
 ]
 ```
+
+It is lazy!
+If you only need the first match, use `head` (or `headMay` from [safe]) -- no extra work will be performed!
+
+```haskell
+>>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+(" entry 1 hello  &", ["1", "hello"])
+```
+
+[safe]: https://hackage.haskell.org/package/safe
 
 ### Replacement
 
