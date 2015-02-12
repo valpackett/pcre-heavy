@@ -40,11 +40,11 @@ True
 ```
 
 It is lazy!
-If you only need the first match, use `head` (or `headMay` from [safe]) -- no extra work will be performed!
+If you only need the first match, use `head` (or, much better, `headMay` from [safe]) -- no extra work will be performed!
 
 ```haskell
->>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
-(" entry 1 hello  &", ["1", "hello"])
+>>> headMay $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+Just (" entry 1 hello  &", ["1", "hello"])
 ```
 
 [safe]: https://hackage.haskell.org/package/safe
@@ -81,7 +81,7 @@ You can pass `pcre-light` options like this:
 >>> gsubO [myRe|\d+|] [exec_notempty] "!!!NUMBER!!!" "Copyright (c) 2015 The 000 Group"
 ```
 
-`utf8` is passed by default in `re`.
+`utf8` is passed by default in the `re` QuasiQuoter.
 
 ## License
 

@@ -10,6 +10,8 @@ module Text.Regex.PCRE.Heavy (
   (=~)
 , scan
 , scanO
+, scanRanges
+, scanRangesO
   -- * Replacement
 , sub
 , subO
@@ -89,13 +91,20 @@ rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
                   loop (n + 1) (o + 2) ((fromIntegral i, fromIntegral j) : acc)
           in loop 0 0 []
 
+nextMatch :: Regex -> [PCREExecOption] -> BS.ByteString -> Int -> Maybe ([(Int, Int)], Int)
+nextMatch r opts str offset =
+  case rawMatch r str offset opts of
+    Nothing -> Nothing
+    Just [] -> Nothing
+    Just ms -> Just (ms, maximum $ map snd ms)
+
 -- | Searches the string for all matches of a given regex.
 --
 -- >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
 -- [(" entry 1 hello  &",["1","hello"]),("entry 2 hi",["2","hi"])]
 --
 -- It is lazy! If you only need the first match, just apply 'head' (or
--- 'headMay' from the 'safe' package) -- no extra work will be performed!
+-- 'headMay' from the "safe" library) -- no extra work will be performed!
 --
 -- >>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
 -- (" entry 1 hello  &",["1","hello"])
@@ -104,13 +113,23 @@ scan r s = scanO r [] s
 
 -- | Exactly like 'scan', but passes runtime options to PCRE.
 scanO :: (Stringable a) => Regex -> [PCREExecOption] -> a -> [(a, [a])]
-scanO r opts s = map behead $ map fromByteString <$> unfoldr nextMatch 0
+scanO r opts s = map behead $ map (fromByteString . substr str) <$> unfoldr (nextMatch r opts str) 0
   where str = toByteString s
-        nextMatch offset =
-          case rawMatch r str offset opts of
-            Nothing -> Nothing
-            Just [] -> Nothing
-            Just ms -> Just (map (substr str) ms, maximum $ map snd ms)
+
+-- | Searches the string for all matches of a given regex, like 'scan', but
+-- returns positions inside of the string.
+--
+-- >>> scanRanges [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+-- [((0,17),[(7,8),(9,14)]),((17,27),[(23,24),(25,27)])]
+--
+-- And just like 'scan', it's lazy.
+scanRanges :: (Stringable a) => Regex -> a -> [((Int, Int), [(Int, Int)])]
+scanRanges r s = scanRangesO r [] s
+
+-- | Exactly like 'scanRanges', but passes runtime options to PCRE.
+scanRangesO :: Stringable a => Regex -> [PCREExecOption] -> a -> [((Int, Int), [(Int, Int)])]
+scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
+  where str = toByteString s
 
 class RegexReplacement a where
   performReplacement :: BS.ByteString -> [BS.ByteString] -> a -> BS.ByteString
