@@ -40,14 +40,26 @@ import qualified Data.ByteString.Internal as BS
 import           System.IO.Unsafe (unsafePerformIO)
 import           Foreign
 
+substr :: BS.ByteString -> (Int, Int) -> BS.ByteString
+substr s (f, t) = BS.take (t - f) . BS.drop f $ s
+
+behead :: [a] -> (a, [a])
+behead (h:t) = (h, t)
+
 class RegexResult a where
   fromResult :: Maybe [BS.ByteString] -> a
 
 instance RegexResult (Maybe [BS.ByteString]) where
   fromResult = id
 
-instance Stringable a => RegexResult (Maybe [a]) where
-  fromResult x = map fromByteString <$> x
+instance RegexResult (Maybe (BS.ByteString, [BS.ByteString])) where
+  fromResult = fmap behead
+
+instance Stringable a => RegexResult (Maybe a) where
+  fromResult x = head <$> map fromByteString <$> x
+
+instance Stringable a => RegexResult (Maybe (a, [a])) where
+  fromResult x = behead <$> map fromByteString <$> x
 
 instance RegexResult Bool where
   fromResult = isJust
@@ -57,8 +69,12 @@ reMatch r s = fromResult $ PCRE.match r (toByteString s) []
 
 -- | Matches a string with a regex.
 --
--- You can cast the result to Bool or Maybe [Stringable]
--- Maybe [Stringable] only represents the first match and its groups.
+-- You can cast the result to:
+-- - Bool
+-- - Stringable a => Maybe a -- note, this won't work for String, which is [Char]
+-- - Stringable a => Maybe (a, [a])
+--
+-- This operator only finds the first match and its groups.
 -- Use 'scan' to find all matches.
 --
 -- Note: if casts to bool automatically.
@@ -66,8 +82,10 @@ reMatch r s = fromResult $ PCRE.match r (toByteString s) []
 -- >>> :set -XQuasiQuotes
 -- >>> "https://unrelenting.technology" =~ [re|^http.*|] :: Bool
 -- True
--- >>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe [String]
--- Just ["https://unrelenting.technology","unrelenting"]
+-- >>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe BS.ByteString
+-- Just "https://unrelenting.technology"
+-- >>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe (String, [String])
+-- Just ("https://unrelenting.technology",["unrelenting"])
 -- >>> if "https://unrelenting.technology" =~ [re|^http.*|] then "YEP" else "NOPE"
 -- "YEP"
 (=~) :: (Stringable a, RegexResult b) => a -> Regex -> b
@@ -103,19 +121,16 @@ rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
                   loop (n + 1) (o + 2) ((fromIntegral i, fromIntegral j) : acc)
           in loop 0 0 []
 
-substr :: BS.ByteString -> (Int, Int) -> BS.ByteString
-substr s (f, t) = BS.take (t - f) . BS.drop f $ s
-
 -- | Searches the string for all matches of a given regex.
 --
 -- >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
--- [[" entry 1 hello  &","1","hello"],["entry 2 hi","2","hi"]]
-scan :: (Stringable a) => Regex -> a -> [[a]]
+-- [(" entry 1 hello  &",["1","hello"]),("entry 2 hi",["2","hi"])]
+scan :: (Stringable a) => Regex -> a -> [(a, [a])]
 scan r s = scanO r [] s
 
 -- | Exactly like 'scan', but passes runtime options to PCRE.
-scanO :: (Stringable a) => Regex -> [PCREExecOption] -> a -> [[a]]
-scanO r opts s = map fromByteString <$> loop 0 []
+scanO :: (Stringable a) => Regex -> [PCREExecOption] -> a -> [(a, [a])]
+scanO r opts s = map behead $ map fromByteString <$> loop 0 []
   where str = toByteString s
         loop offset acc =
           case rawMatch r str offset opts of

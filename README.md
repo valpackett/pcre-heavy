@@ -34,8 +34,8 @@ if "https://unrelenting.technology" =~ [re|^http.*|] then "YEP" else "NOPE"
 Extracting matches (You can use any string type, not just String)
 
 ```haskell
->>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe [String]
-Just ["https://unrelenting.technology","unrelenting"]
+>>> "https://unrelenting.technology" =~ [re|^https?://([^\.]+)\..*|] :: Maybe (String, [String])
+Just ("https://unrelenting.technology", ["unrelenting"])
 ```
 
 `scan` returns all matches (search)
@@ -43,8 +43,8 @@ Just ["https://unrelenting.technology","unrelenting"]
 ```haskell
 >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi" :: [[String]]
 [
-  [" entry 1 hello  &", "1", "hello"]
-, ["entry 2 hi",        "2", "hi"]
+  (" entry 1 hello  &", ["1", "hello"])
+, ("entry 2 hi",        ["2", "hi"])
 ]
 ```
 
