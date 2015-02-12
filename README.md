@@ -80,6 +80,8 @@ You can pass `pcre-light` options like this:
 >>> gsubO [myRe|\d+|] [exec_notempty] "!!!NUMBER!!!" "Copyright (c) 2015 The 000 Group"
 ```
 
+`utf8` is passed by default in `re`.
+
 ## License
 
 Copyright 2015 Greg V <greg@unrelenting.technology>  

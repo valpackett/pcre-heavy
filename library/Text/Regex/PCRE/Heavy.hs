@@ -45,6 +45,7 @@ substr s (f, t) = BS.take (t - f) . BS.drop f $ s
 
 behead :: [a] -> (a, [a])
 behead (h:t) = (h, t)
+behead [] = error "no head to behead"
 
 class RegexResult a where
   fromResult :: Maybe [BS.ByteString] -> a
@@ -203,7 +204,7 @@ gsubO r opts t s = fromByteString $ loop 0 str
             _ -> acc
 
 instance Lift PCREOption where
-  lift o = [| o |]
+  lift o = let o' = show o in [| read o' :: PCREOption |]
 
 quoteExpRegex :: [PCREOption] -> String -> ExpQ
 quoteExpRegex opts txt = [| PCRE.compile (toByteString txt) opts |]
@@ -219,4 +220,4 @@ mkRegexQQ opts = QuasiQuoter
 
 -- | A QuasiQuoter for regular expressions that does a compile time check.
 re :: QuasiQuoter
-re = mkRegexQQ []
+re = mkRegexQQ [utf8]
