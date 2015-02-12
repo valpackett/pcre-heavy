@@ -1,7 +1,13 @@
 name:            pcre-heavy
-version:         0.1.0
+version:         0.2.0
 synopsis:        A regexp library on top of pcre-light you can actually use.
-description:     https://github.com/myfreeweb/pcre-heavy
+description:
+    A regular expressions library that does not suck.
+
+    - based on <https://hackage.haskell.org/package/pcre-light pcre-light>
+    - takes and returns <https://hackage.haskell.org/package/stringable Stringables> everywhere
+    - a QuasiQuoter for regexps that does compile time checking
+    - SEARCHES FOR MULTIPLE MATCHES! DOES REPLACEMENT!
 category:        Web
 homepage:        https://github.com/myfreeweb/pcre-heavy
 author:          Greg V
