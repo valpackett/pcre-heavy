@@ -17,6 +17,9 @@ module Text.Regex.PCRE.Heavy (
 , subO
 , gsub
 , gsubO
+  -- * Splitting
+, split
+, splitO
   -- * QuasiQuoter
 , re
 , mkRegexQQ
@@ -36,7 +39,7 @@ import qualified Text.Regex.PCRE.Light as PCRE
 import           Text.Regex.PCRE.Light.Base
 import           Control.Applicative ((<$>))
 import           Data.Maybe (isJust, fromMaybe)
-import           Data.List (unfoldr)
+import           Data.List (unfoldr, mapAccumL)
 import           Data.Stringable
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
@@ -194,6 +197,27 @@ gsubO r opts t s = fromByteString $ loop 0 str
           case rawSub r t acc offset opts of
             Just (result, newOffset) -> loop newOffset result
             _ -> acc
+
+-- | Splits the string using the given regex.
+--
+-- Is lazy.
+--
+-- >>> split [re|%(begin|next|end)%|] "%begin%hello%next%world%end%"
+-- ["","hello","world",""]
+--
+-- >>> split [re|%(begin|next|end)%|] ""
+-- [""]
+split :: Stringable a => Regex -> a -> [a]
+split r s = splitO r [] s
+
+-- | Exactly like 'split', but passes runtime options to PCRE.
+splitO :: Stringable a => Regex -> [PCREExecOption] -> a -> [a]
+splitO r opts s = map fromByteString $ map' (substr str) partRanges
+  where map' f = foldr ((:) . f) [f (lastL, BS.length str)] -- avoiding the snoc operation
+        (lastL, partRanges) = mapAccumL invRange 0 ranges
+        invRange acc (xl, xr) = (xr, (acc, xl))
+        ranges = map fst $ scanRangesO r opts str
+        str = toByteString s
 
 instance Lift PCREOption where
   -- well, the constructor isn't exported, but at least it implements Read/Show :D

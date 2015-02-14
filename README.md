@@ -71,9 +71,18 @@ Just (" entry 1 hello  &", ["1", "hello"])
 -- I have no idea why you would want to use that, but that's there :-)
 ```
 
+### Splitting
+
+`split`, well, splits.
+
+```haskell
+>>> split [re|%(begin|next|end)%|] "%begin%hello%next%world%end%"
+["","hello","world",""]
+```
+
 ### Options
 
-You can pass `pcre-light` options like this:
+You can pass `pcre-light` options by using the `somethingO` variants of functions (and `mkRegexQQ` for compile time options):
 
 ```haskell
 >>> let myRe = mkRegexQQ [multiline, utf8, ungreedy]
