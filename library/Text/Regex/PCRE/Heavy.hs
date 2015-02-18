@@ -186,6 +186,9 @@ subO r opts t s = fromMaybe s $ fromByteString <$> fst <$> rawSub r t (toByteStr
 --
 -- >>> gsub [re|thing|] "world" "Hello, thing thing" :: String
 -- "Hello, world world"
+--
+-- >>> gsub [re||] "" "Hello, world" :: String
+-- "Hello, world"
 gsub :: (Stringable a, RegexReplacement r) => Regex -> r -> a -> a
 gsub r t s = gsubO r [] t s
 
@@ -195,7 +198,8 @@ gsubO r opts t s = fromByteString $ loop 0 str
   where str = toByteString s
         loop offset acc =
           case rawSub r t acc offset opts of
-            Just (result, newOffset) -> loop newOffset result
+            Just (result, newOffset) ->
+              if newOffset == offset then acc else loop newOffset result
             _ -> acc
 
 -- | Splits the string using the given regex.
