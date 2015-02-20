@@ -26,7 +26,7 @@ install:
 	cabal install --enable-tests --enable-benchmarks --only-dependencies --reorder-goals
 
 repl:
-	cabal repl lib:pcre-heavy
+	cabal repl lib:pcre-heavy --ghc-options="-fno-hpc"
 
 test:
 	cabal test examples --show-details=always --test-option=--color

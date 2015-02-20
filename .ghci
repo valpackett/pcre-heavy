@@ -1,0 +1,2 @@
+:set -itest-suite/ -package doctest -package Glob
+:def test   \_ -> return $ ":load test-suite/DocTest.hs\n:reload\n:main"
