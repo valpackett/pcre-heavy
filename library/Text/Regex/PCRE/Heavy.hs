@@ -9,6 +9,7 @@
 module Text.Regex.PCRE.Heavy (
   -- * Matching
   (=~)
+, (≈)
 , scan
 , scanO
 , scanRanges
@@ -64,6 +65,10 @@ reMatch r s = isJust $ PCRE.match r (toByteString s) []
 -- True
 (=~) ∷ Stringable a ⇒ a → Regex → Bool
 (=~) = flip reMatch
+
+-- | Same as =~.
+(≈) ∷ Stringable a ⇒ a → Regex → Bool
+(≈) = (=~)
 
 -- | Does raw PCRE matching (you probably shouldn't use this directly).
 -- 

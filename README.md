@@ -25,6 +25,13 @@ import           Text.Regex.PCRE.Heavy
 True
 ```
 
+For `UnicodeSyntax` fans, it's also available as ≈ (U+2248 ALMOST EQUAL TO):
+
+```haskell
+>>> "https://unrelenting.technology" ≈ [re|^http.*|]
+True
+```
+
 ### Matching (Searching)
 
 (You can use any string type, not just String!)
