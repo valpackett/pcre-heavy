@@ -1,0 +1,11 @@
+language: haskell
+ghc:
+  - 7.8
+install:
+  - make install
+  - make configure
+script:
+  - make test
+after_script:
+  - cabal install hpc-coveralls
+  - .cabal-sandbox/bin/hpc-coveralls --exclude-dir=test-suite --exclude-dir=benchmark examples
