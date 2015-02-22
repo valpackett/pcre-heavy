@@ -18,7 +18,7 @@ haddock:
 	open dist/doc/html/pcre-heavy/index.html
 
 hpc:
-	hpc markup --destdir=tmp dist/hpc/tix/tests/tests.tix
+	hpc markup --destdir=tmp dist/hpc/tix/examples/examples.tix
 	open tmp/hpc_index.html
 
 install:

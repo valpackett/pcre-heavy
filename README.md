@@ -1,4 +1,4 @@
-# pcre-heavy [![Hackage](https://img.shields.io/hackage/v/pcre-heavy.svg?style=flat)](https://hackage.haskell.org/package/pcre-heavy) [![Build Status](https://img.shields.io/travis/myfreeweb/pcre-heavy.svg?style=flat)](https://travis-ci.org/myfreeweb/pcre-heavy) [![Coverage Status](https://img.shields.io/coveralls/myfreeweb/pcre-heavy.svg?style=flat)](https://coveralls.io/r/myfreeweb/pcre-heavy) [![ISC License](https://img.shields.io/badge/license-ISC-red.svg?style=flat)](https://tldrlegal.com/license/-isc-license)
+# pcre-heavy [![Hackage](https://img.shields.io/hackage/v/pcre-heavy.svg?style=flat)](https://hackage.haskell.org/package/pcre-heavy) [![Build Status](https://img.shields.io/travis/myfreeweb/pcre-heavy.svg?style=flat)](https://travis-ci.org/myfreeweb/pcre-heavy) [![ISC License](https://img.shields.io/badge/license-ISC-red.svg?style=flat)](https://tldrlegal.com/license/-isc-license)
 
 *Finally!* A Haskell regular expressions library that does not suck.
 
