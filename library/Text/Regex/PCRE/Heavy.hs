@@ -49,6 +49,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
 import           System.IO.Unsafe (unsafePerformIO)
 import           Foreign
+import           Debug.Trace
 
 substr ∷ BS.ByteString → (Int, Int) → BS.ByteString
 substr s (f, t) = BS.take (t - f) . BS.drop f $ s
@@ -161,9 +162,10 @@ rawSub ∷ RegexReplacement r ⇒ Regex → r → BS.ByteString → Int → [PCR
 rawSub r t s offset opts =
   case rawMatch r s offset opts of
     Just ((begin, end):groups) →
+      let replacement = performReplacement (substr s (begin, end)) (map (substr s) groups) t in
       Just (BS.concat [ substr s (0, begin)
-                      , performReplacement (substr s (begin, end)) (map (substr s) groups) t
-                      , substr s (end, BS.length s)], end)
+                      , replacement
+                      , substr s (end, BS.length s)], begin + BS.length replacement)
     _ → Nothing
 
 -- | Replaces the first occurence of a given regex.
@@ -173,6 +175,9 @@ rawSub r t s offset opts =
 --
 -- >>> sub [re|a|] "b" "c" :: String
 -- "c"
+--
+-- >>> sub [re|bad|] "xxxbad" "this is bad, right?"
+-- "this is xxxbad, right?"
 --
 -- You can use functions!
 -- A function of Stringable gets the full match.
@@ -197,6 +202,13 @@ subO r opts t s = fromMaybe s $ fromByteString <$> fst <$> rawSub r t (toByteStr
 --
 -- >>> gsub [re||] "" "Hello, world" :: String
 -- "Hello, world"
+--
+-- https://github.com/myfreeweb/pcre-heavy/issues/2
+-- >>> gsub [re|good|] "bad" "goodgoodgood"
+-- "badbadbad"
+--
+-- >>> gsub [re|bad|] "xxxbad" "this is bad, right? bad"
+-- "this is xxxbad, right? xxxbad"
 gsub ∷ (Stringable a, RegexReplacement r) ⇒ Regex → r → a → a
 gsub r t s = gsubO r [] t s
 
