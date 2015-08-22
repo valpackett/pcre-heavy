@@ -1,5 +1,5 @@
 name:            pcre-heavy
-version:         0.2.2
+version:         0.2.3
 synopsis:        A regexp library on top of pcre-light you can actually use.
 description:
     A regular expressions library that does not suck.
