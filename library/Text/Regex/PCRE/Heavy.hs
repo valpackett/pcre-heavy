@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
-{-# LANGUAGE UndecidableInstances, OverlappingInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances, BangPatterns #-}
 {-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, CPP #-}
 
 -- | A usable regular expressions library on top of pcre-light.
 module Text.Regex.PCRE.Heavy (
@@ -34,12 +34,14 @@ module Text.Regex.PCRE.Heavy (
 , rawSub
 ) where
 
+#if __GLASGOW_HASKELL__ < 709
+import           Control.Applicative ((<$>))
+#endif
 import           Language.Haskell.TH hiding (match)
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import qualified Text.Regex.PCRE.Light as PCRE
 import           Text.Regex.PCRE.Light.Base
-import           Control.Applicative ((<$>))
 import           Data.Maybe (isJust, fromMaybe)
 import           Data.List (unfoldr, mapAccumL)
 import           Data.Stringable
@@ -143,7 +145,7 @@ scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
 class RegexReplacement a where
   performReplacement ∷ BS.ByteString → [BS.ByteString] → a → BS.ByteString
 
-instance Stringable a ⇒ RegexReplacement a where
+instance {-# OVERLAPPABLE #-} Stringable a ⇒ RegexReplacement a where
   performReplacement _ _ to = toByteString to
 
 instance Stringable a ⇒ RegexReplacement (a → [a] → a) where
