@@ -104,13 +104,13 @@ You can pass `pcre-light` options by using the `somethingO` variants of function
 Use [stack] to build.  
 Use ghci to run tests quickly with `:test` (see the `.ghci` file).
 
-``bash
+```bash
 $ stack build
 
 $ stack test && rm tests.tix
 
 $ stack ghci --ghc-options="-fno-hpc"
-``
+```
 
 [stack]: https://github.com/commercialhaskell/stack
 
