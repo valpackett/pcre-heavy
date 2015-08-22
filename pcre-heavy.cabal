@@ -16,14 +16,14 @@ homepage:        https://github.com/myfreeweb/pcre-heavy
 author:          Greg V
 copyright:       2015 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
-license:         OtherLicense
-license-file:    COPYING
+license:         PublicDomain
+license-file:    UNLICENSE
 build-type:      Simple
 cabal-version:   >= 1.18
 extra-source-files:
     README.md
 tested-with:
-    GHC == 7.8.3
+    GHC == 7.10.2
 
 source-repository head
     type: git
@@ -46,8 +46,8 @@ library
 test-suite examples
     build-depends:
         base >= 4.0.0.0 && < 5
-      , Glob == 0.*
-      , doctest == 0.*
+      , Glob
+      , doctest
     default-language: Haskell2010
     ghc-options: -threaded
     hs-source-dirs: test-suite

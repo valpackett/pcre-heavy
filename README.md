@@ -1,4 +1,4 @@
-# pcre-heavy [![Hackage](https://img.shields.io/hackage/v/pcre-heavy.svg?style=flat)](https://hackage.haskell.org/package/pcre-heavy) [![Build Status](https://img.shields.io/travis/myfreeweb/pcre-heavy.svg?style=flat)](https://travis-ci.org/myfreeweb/pcre-heavy) [![ISC License](https://img.shields.io/badge/license-ISC-red.svg?style=flat)](https://tldrlegal.com/license/-isc-license)
+# pcre-heavy [![Hackage](https://img.shields.io/hackage/v/pcre-heavy.svg?style=flat)](https://hackage.haskell.org/package/pcre-heavy) [![Build Status](https://img.shields.io/travis/myfreeweb/pcre-heavy.svg?style=flat)](https://travis-ci.org/myfreeweb/pcre-heavy) [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
 *Finally!* A Haskell regular expressions library that does not suck.
 
@@ -99,7 +99,29 @@ You can pass `pcre-light` options by using the `somethingO` variants of function
 
 `utf8` is passed by default in the `re` QuasiQuoter.
 
+## Development
+
+Use [stack] to build.  
+Use ghci to run tests quickly with `:test` (see the `.ghci` file).
+
+``bash
+$ stack build
+
+$ stack test && rm tests.tix
+
+$ stack ghci --ghc-options="-fno-hpc"
+``
+
+[stack]: https://github.com/commercialhaskell/stack
+
+## Contributing
+
+Please feel free to submit pull requests!
+Bugfixes and simple non-breaking improvements will be accepted without any questions :-)
+
+By participating in this project you agree to follow the [Contributor Code of Conduct](http://contributor-covenant.org/version/1/2/0/).
+
 ## License
 
-Copyright 2015 Greg V <greg@unrelenting.technology>  
-Available under the ISC license, see the `COPYING` file
+This is free and unencumbered software released into the public domain.  
+For more information, please refer to the `UNLICENSE` file or [unlicense.org](http://unlicense.org).
