@@ -48,7 +48,7 @@ import           Data.Stringable
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
 import           System.IO.Unsafe (unsafePerformIO)
-import           Foreign
+import           Foreign (withForeignPtr, allocaBytes, nullPtr, plusPtr, peekElemOff)
 import           Debug.Trace
 
 substr ∷ BS.ByteString → (Int, Int) → BS.ByteString
