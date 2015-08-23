@@ -4,13 +4,13 @@ synopsis:        A regexp library on top of pcre-light you can actually use.
 description:
     A regular expressions library that does not suck.
 
-    - based on <https://hackage.haskell.org/package/pcre-light pcre-light>
+    Based on <https://hackage.haskell.org/package/pcre-light pcre-light>.
 
-    - takes and returns <https://hackage.haskell.org/package/stringable Stringables> everywhere
+    Takes and returns <https://hackage.haskell.org/package/stringable Stringables> everywhere.
 
-    - a QuasiQuoter for regexps that does compile time checking
+    Includes a QuasiQuoter for regexps that does compile time checking.
 
-    - SEARCHES FOR MULTIPLE MATCHES! DOES REPLACEMENT!
+    SEARCHES FOR MULTIPLE MATCHES! DOES REPLACEMENT!
 category:        Web
 homepage:        https://github.com/myfreeweb/pcre-heavy
 author:          Greg V
@@ -31,7 +31,7 @@ source-repository head
 
 library
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.7.0.0 && < 5
       , pcre-light
       , bytestring
       , stringable
@@ -45,7 +45,7 @@ library
 
 test-suite examples
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.7.0.0 && < 5
       , Glob
       , doctest
     default-language: Haskell2010
