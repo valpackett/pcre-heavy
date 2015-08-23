@@ -19,7 +19,7 @@ maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
 build-type:      Simple
-cabal-version:   >= 1.18
+cabal-version:   >= 1.10
 extra-source-files:
     README.md
 tested-with:
