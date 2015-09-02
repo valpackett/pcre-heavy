@@ -1,2 +1,2 @@
-:set -itest-suite/ -package doctest -package Glob
+:set -itest-suite/ -package doctest -package Glob -XFlexibleContexts
 :def test   \_ -> return $ ":load test-suite/DocTest.hs\n:reload\n:main"

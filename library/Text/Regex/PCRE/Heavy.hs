@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
-{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, UnicodeSyntax, CPP #-}
+{-# LANGUAGE NoImplicitPrelude, UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, UnicodeSyntax #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 -- | A usable regular expressions library on top of pcre-light.
@@ -32,9 +32,7 @@ module Text.Regex.PCRE.Heavy (
 , rawSub
 ) where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative ((<$>))
-#endif
+import           Prelude.Compat
 import           Language.Haskell.TH hiding (match)
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
@@ -42,7 +40,9 @@ import qualified Text.Regex.PCRE.Light as PCRE
 import           Text.Regex.PCRE.Light.Base
 import           Data.Maybe (isJust, fromMaybe)
 import           Data.List (unfoldr, mapAccumL)
+import qualified Data.List.NonEmpty as NE
 import           Data.String.Conversions
+import           Data.String.Conversions.Monomorphic
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
 import           System.IO.Unsafe (unsafePerformIO)
@@ -51,9 +51,8 @@ import           Foreign (withForeignPtr, allocaBytes, nullPtr, plusPtr, peekEle
 substr ∷ SBS → (Int, Int) → SBS
 substr s (f, t) = BS.take (t - f) . BS.drop f $ s
 
-behead ∷ [a] → (a, [a])
-behead (h:t) = (h, t)
-behead [] = error "no head to behead"
+behead ∷ NE.NonEmpty a → (a, [a])
+behead l = (NE.head l, NE.tail l)
 
 reMatch ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → Bool
 reMatch r s = isJust $ PCRE.match r (cs s) []
@@ -100,12 +99,9 @@ rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
                   loop (n + 1) (o + 2) ((fromIntegral i, fromIntegral j) : acc)
           in loop 0 0 []
 
-nextMatch ∷ Regex → [PCREExecOption] → SBS → Int → Maybe ([(Int, Int)], Int)
+nextMatch ∷ Regex → [PCREExecOption] → SBS → Int → Maybe (NE.NonEmpty (Int, Int), Int)
 nextMatch r opts str offset =
-  case rawMatch r str offset opts of
-    Nothing → Nothing
-    Just [] → Nothing
-    Just ms → Just (ms, maximum $ map snd ms)
+  rawMatch r str offset opts >>= NE.nonEmpty >>= \ms → return (ms, maximum $ fmap snd ms)
 
 -- | Searches the string for all matches of a given regex.
 --
@@ -122,8 +118,8 @@ scan r s = scanO r [] s
 
 -- | Exactly like 'scan', but passes runtime options to PCRE.
 scanO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [(a, [a])]
-scanO r opts s = map behead $ map (cs . substr str) <$> unfoldr (nextMatch r opts str) 0
-  where str = cs s
+scanO r opts s = map behead $ fmap (cs . substr str) <$> unfoldr (nextMatch r opts str) 0
+  where str = toSBS s
 
 -- | Searches the string for all matches of a given regex, like 'scan', but
 -- returns positions inside of the string.
@@ -138,7 +134,7 @@ scanRanges r s = scanRangesO r [] s
 -- | Exactly like 'scanRanges', but passes runtime options to PCRE.
 scanRangesO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [((Int, Int), [(Int, Int)])]
 scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
-  where str = cs s
+  where str = toSBS s
 
 class RegexReplacement a where
   performReplacement ∷ SBS → [SBS] → a → SBS
@@ -212,7 +208,7 @@ gsub r t s = gsubO r [] t s
 -- | Exactly like 'gsub', but passes runtime options to PCRE.
 gsubO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
 gsubO r opts t s = cs $ loop 0 str
-  where str = cs s
+  where str = toSBS s
         loop offset acc =
           case rawSub r t acc offset opts of
             Just (result, newOffset) →
@@ -238,7 +234,7 @@ splitO r opts s = map cs $ map' (substr str) partRanges
         (lastL, partRanges) = mapAccumL invRange 0 ranges
         invRange acc (xl, xr) = (xr, (acc, xl))
         ranges = map fst $ scanRangesO r opts str
-        str = cs s
+        str = toSBS s
 
 instance Lift PCREOption where
   -- well, the constructor isn't exported, but at least it implements Read/Show :D
