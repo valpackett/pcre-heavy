@@ -34,7 +34,7 @@ library
         base >= 4.3.0.0 && < 5
       , pcre-light
       , bytestring
-      , stringable
+      , string-conversions
       , template-haskell
     default-language: Haskell2010
     exposed-modules:

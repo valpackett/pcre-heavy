@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances, BangPatterns #-}
-{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, UnicodeSyntax, CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE UnicodeSyntax, CPP #-}
 
 -- | A usable regular expressions library on top of pcre-light.
 module Text.Regex.PCRE.Heavy (
@@ -44,33 +42,32 @@ import qualified Text.Regex.PCRE.Light as PCRE
 import           Text.Regex.PCRE.Light.Base
 import           Data.Maybe (isJust, fromMaybe)
 import           Data.List (unfoldr, mapAccumL)
-import           Data.Stringable
+import           Data.String.Conversions
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Internal as BS
 import           System.IO.Unsafe (unsafePerformIO)
 import           Foreign (withForeignPtr, allocaBytes, nullPtr, plusPtr, peekElemOff)
-import           Debug.Trace
 
-substr ∷ BS.ByteString → (Int, Int) → BS.ByteString
+substr ∷ SBS → (Int, Int) → SBS
 substr s (f, t) = BS.take (t - f) . BS.drop f $ s
 
 behead ∷ [a] → (a, [a])
 behead (h:t) = (h, t)
 behead [] = error "no head to behead"
 
-reMatch ∷ Stringable a ⇒ Regex → a → Bool
-reMatch r s = isJust $ PCRE.match r (toByteString s) []
+reMatch ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → Bool
+reMatch r s = isJust $ PCRE.match r (cs s) []
 
 -- | Checks whether a string matches a regex.
 --
 -- >>> :set -XQuasiQuotes
+-- >>> :set -XFlexibleContexts
 -- >>> "https://unrelenting.technology" =~ [re|^http.*|]
 -- True
-(=~) ∷ Stringable a ⇒ a → Regex → Bool
+(=~), (≈) ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ a → Regex → Bool
 (=~) = flip reMatch
 
 -- | Same as =~.
-(≈) ∷ Stringable a ⇒ a → Regex → Bool
 (≈) = (=~)
 
 -- | Does raw PCRE matching (you probably shouldn't use this directly).
@@ -82,7 +79,7 @@ reMatch r s = isJust $ PCRE.match r (toByteString s) []
 -- Just [(7,9)]
 -- >>> rawMatch [re|(\w)(\w)|] "a a ab abc ba" 0 []
 -- Just [(4,6),(4,5),(5,6)]
-rawMatch ∷ Regex → BS.ByteString → Int → [PCREExecOption] → Maybe [(Int, Int)]
+rawMatch ∷ Regex → SBS → Int → [PCREExecOption] → Maybe [(Int, Int)]
 rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
   withForeignPtr pcreFp $ \pcrePtr → do
     let nCapt = PCRE.captureCount r
@@ -103,7 +100,7 @@ rawMatch r@(Regex pcreFp _) s offset opts = unsafePerformIO $ do
                   loop (n + 1) (o + 2) ((fromIntegral i, fromIntegral j) : acc)
           in loop 0 0 []
 
-nextMatch ∷ Regex → [PCREExecOption] → BS.ByteString → Int → Maybe ([(Int, Int)], Int)
+nextMatch ∷ Regex → [PCREExecOption] → SBS → Int → Maybe ([(Int, Int)], Int)
 nextMatch r opts str offset =
   case rawMatch r str offset opts of
     Nothing → Nothing
@@ -112,53 +109,53 @@ nextMatch r opts str offset =
 
 -- | Searches the string for all matches of a given regex.
 --
--- >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+-- >>> scan [re|\s*entry (\d+) (\w+)\s*&?|] (" entry 1 hello  &entry 2 hi" :: String)
 -- [(" entry 1 hello  &",["1","hello"]),("entry 2 hi",["2","hi"])]
 --
 -- It is lazy! If you only need the first match, just apply 'head' (or
 -- 'headMay' from the "safe" library) -- no extra work will be performed!
 --
--- >>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+-- >>> head $ scan [re|\s*entry (\d+) (\w+)\s*&?|] (" entry 1 hello  &entry 2 hi" :: String)
 -- (" entry 1 hello  &",["1","hello"])
-scan ∷ (Stringable a) ⇒ Regex → a → [(a, [a])]
+scan ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → [(a, [a])]
 scan r s = scanO r [] s
 
 -- | Exactly like 'scan', but passes runtime options to PCRE.
-scanO ∷ (Stringable a) ⇒ Regex → [PCREExecOption] → a → [(a, [a])]
-scanO r opts s = map behead $ map (fromByteString . substr str) <$> unfoldr (nextMatch r opts str) 0
-  where str = toByteString s
+scanO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [(a, [a])]
+scanO r opts s = map behead $ map (cs . substr str) <$> unfoldr (nextMatch r opts str) 0
+  where str = cs s
 
 -- | Searches the string for all matches of a given regex, like 'scan', but
 -- returns positions inside of the string.
 --
--- >>> scanRanges [re|\s*entry (\d+) (\w+)\s*&?|] " entry 1 hello  &entry 2 hi"
+-- >>> scanRanges [re|\s*entry (\d+) (\w+)\s*&?|] (" entry 1 hello  &entry 2 hi" :: String)
 -- [((0,17),[(7,8),(9,14)]),((17,27),[(23,24),(25,27)])]
 --
 -- And just like 'scan', it's lazy.
-scanRanges ∷ (Stringable a) ⇒ Regex → a → [((Int, Int), [(Int, Int)])]
+scanRanges ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → [((Int, Int), [(Int, Int)])]
 scanRanges r s = scanRangesO r [] s
 
 -- | Exactly like 'scanRanges', but passes runtime options to PCRE.
-scanRangesO ∷ Stringable a ⇒ Regex → [PCREExecOption] → a → [((Int, Int), [(Int, Int)])]
+scanRangesO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [((Int, Int), [(Int, Int)])]
 scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
-  where str = toByteString s
+  where str = cs s
 
 class RegexReplacement a where
-  performReplacement ∷ BS.ByteString → [BS.ByteString] → a → BS.ByteString
+  performReplacement ∷ SBS → [SBS] → a → SBS
 
-instance {-# OVERLAPPABLE #-} Stringable a ⇒ RegexReplacement a where
-  performReplacement _ _ to = toByteString to
+instance {-# OVERLAPPABLE #-} ConvertibleStrings a SBS ⇒ RegexReplacement a where
+  performReplacement _ _ to = cs to
 
-instance Stringable a ⇒ RegexReplacement (a → [a] → a) where
-  performReplacement from groups replacer = toByteString $ replacer (fromByteString from) (map fromByteString groups)
+instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement (a → [a] → a) where
+  performReplacement from groups replacer = cs $ replacer (cs from) (map cs groups)
 
-instance Stringable a ⇒ RegexReplacement (a → a) where
-  performReplacement from _ replacer = toByteString $ replacer (fromByteString from)
+instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement (a → a) where
+  performReplacement from _ replacer = cs $ replacer (cs from)
 
-instance Stringable a ⇒ RegexReplacement ([a] → a) where
-  performReplacement _ groups replacer = toByteString $ replacer (map fromByteString groups)
+instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement ([a] → a) where
+  performReplacement _ groups replacer = cs $ replacer (map cs groups)
 
-rawSub ∷ RegexReplacement r ⇒ Regex → r → BS.ByteString → Int → [PCREExecOption] → Maybe (BS.ByteString, Int)
+rawSub ∷ RegexReplacement r ⇒ Regex → r → SBS → Int → [PCREExecOption] → Maybe (SBS, Int)
 rawSub r t s offset opts =
   case rawMatch r s offset opts of
     Just ((begin, end):groups) →
@@ -176,22 +173,22 @@ rawSub r t s offset opts =
 -- >>> sub [re|a|] "b" "c" :: String
 -- "c"
 --
--- >>> sub [re|bad|] "xxxbad" "this is bad, right?"
+-- >>> sub [re|bad|] "xxxbad" "this is bad, right?" :: String
 -- "this is xxxbad, right?"
 --
 -- You can use functions!
--- A function of Stringable gets the full match.
--- A function of [Stringable] gets the groups.
--- A function of Stringable → [Stringable] gets both.
+-- A function of ConvertibleStrings SBS gets the full match.
+-- A function of [ConvertibleStrings SBS] gets the groups.
+-- A function of ConvertibleStrings SBS → [ConvertibleStrings SBS] gets both.
 --
 -- >>> sub [re|%(\d+)(\w+)|] (\(d:w:_) -> "{" ++ d ++ " of " ++ w ++ "}" :: String) "Hello, %20thing" :: String
 -- "Hello, {20 of thing}"
-sub ∷ (Stringable a, RegexReplacement r) ⇒ Regex → r → a → a
+sub ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → r → a → a
 sub r t s = subO r [] t s
 
 -- | Exactly like 'sub', but passes runtime options to PCRE.
-subO ∷ (Stringable a, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
-subO r opts t s = fromMaybe s $ fromByteString <$> fst <$> rawSub r t (toByteString s) 0 opts
+subO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
+subO r opts t s = fromMaybe s $ cs <$> fst <$> rawSub r t (cs s) 0 opts
 
 -- | Replaces all occurences of a given regex.
 --
@@ -204,18 +201,18 @@ subO r opts t s = fromMaybe s $ fromByteString <$> fst <$> rawSub r t (toByteStr
 -- "Hello, world"
 --
 -- https://github.com/myfreeweb/pcre-heavy/issues/2
--- >>> gsub [re|good|] "bad" "goodgoodgood"
+-- >>> gsub [re|good|] "bad" "goodgoodgood" :: String
 -- "badbadbad"
 --
--- >>> gsub [re|bad|] "xxxbad" "this is bad, right? bad"
+-- >>> gsub [re|bad|] "xxxbad" "this is bad, right? bad" :: String
 -- "this is xxxbad, right? xxxbad"
-gsub ∷ (Stringable a, RegexReplacement r) ⇒ Regex → r → a → a
+gsub ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → r → a → a
 gsub r t s = gsubO r [] t s
 
 -- | Exactly like 'gsub', but passes runtime options to PCRE.
-gsubO ∷ (Stringable a, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
-gsubO r opts t s = fromByteString $ loop 0 str
-  where str = toByteString s
+gsubO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
+gsubO r opts t s = cs $ loop 0 str
+  where str = cs s
         loop offset acc =
           case rawSub r t acc offset opts of
             Just (result, newOffset) →
@@ -226,30 +223,30 @@ gsubO r opts t s = fromByteString $ loop 0 str
 --
 -- Is lazy.
 --
--- >>> split [re|%(begin|next|end)%|] "%begin%hello%next%world%end%"
+-- >>> split [re|%(begin|next|end)%|] ("%begin%hello%next%world%end%" :: String)
 -- ["","hello","world",""]
 --
--- >>> split [re|%(begin|next|end)%|] ""
+-- >>> split [re|%(begin|next|end)%|] ("" :: String)
 -- [""]
-split ∷ Stringable a ⇒ Regex → a → [a]
+split ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → [a]
 split r s = splitO r [] s
 
 -- | Exactly like 'split', but passes runtime options to PCRE.
-splitO ∷ Stringable a ⇒ Regex → [PCREExecOption] → a → [a]
-splitO r opts s = map fromByteString $ map' (substr str) partRanges
+splitO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [a]
+splitO r opts s = map cs $ map' (substr str) partRanges
   where map' f = foldr ((:) . f) [f (lastL, BS.length str)] -- avoiding the snoc operation
         (lastL, partRanges) = mapAccumL invRange 0 ranges
         invRange acc (xl, xr) = (xr, (acc, xl))
         ranges = map fst $ scanRangesO r opts str
-        str = toByteString s
+        str = cs s
 
 instance Lift PCREOption where
   -- well, the constructor isn't exported, but at least it implements Read/Show :D
   lift o = let o' = show o in [| read o' ∷ PCREOption |]
 
 quoteExpRegex ∷ [PCREOption] → String → ExpQ
-quoteExpRegex opts txt = [| PCRE.compile (toByteString (txt ∷ String)) opts |]
-  where !_ = PCRE.compile (toByteString txt) opts -- check at compile time
+quoteExpRegex opts txt = [| PCRE.compile (cs (txt ∷ String)) opts |]
+  where !_ = PCRE.compile (cs txt) opts -- check at compile time
 
 -- | Returns a QuasiQuoter like 're', but with given PCRE options.
 mkRegexQQ ∷ [PCREOption] → QuasiQuoter

@@ -2,19 +2,20 @@
 
 *Finally!* A Haskell regular expressions library that does not suck.
 
-- based on [pcre-light], none of that regex-compat-pluggable-backend stuff
-- takes and returns [Stringables] everywhere, use ANY STRING TYPE (String, ByteString, LByteString, Text, LText, FilePath) -- but you need a bit more type annotations than usual
+- based on [pcre-light], none of that regex-base complicated pluggable-backend stuff
+- takes and returns [ConvertibleStrings] everywhere, use ANY STRING TYPE (String, ByteString, Lazy ByteString, Text, Lazy Text) -- but you need a bit more type annotations (or [ClassyPrelude]'s `asText`, `asString`, etc.) if you use `OverloadedStrings` which you probably can't live without
 - a QuasiQuoter for regexps that does compile time checking (BTW, [vim2hs] has correct syntax highlighting for that!)
 - **SEARCHES FOR MULTIPLE MATCHES! DOES REPLACEMENT!**
 
 [pcre-light]: https://hackage.haskell.org/package/pcre-light
-[Stringables]: https://hackage.haskell.org/package/stringable
+[ConvertibleStrings]: https://hackage.haskell.org/package/string-conversions
+[ClassyPrelude]: https://hackage.haskell.org/package/classy-prelude
 [vim2hs]: https://github.com/dag/vim2hs#quasi-quoting
 
 ## Usage
 
 ```haskell
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes, FlexibleContexts #-}
 import           Text.Regex.PCRE.Heavy
 ```
 
