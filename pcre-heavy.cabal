@@ -1,5 +1,5 @@
 name:            pcre-heavy
-version:         0.2.5
+version:         1.0.0
 synopsis:        A regexp library on top of pcre-light you can actually use.
 description:
     A regular expressions library that does not suck.
@@ -39,7 +39,6 @@ library
     default-language: Haskell2010
     exposed-modules:
         Text.Regex.PCRE.Heavy
-    ghc-prof-options: -prof
     ghc-options: -Wall
     hs-source-dirs: library
 
