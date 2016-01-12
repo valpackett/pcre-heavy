@@ -70,7 +70,7 @@ reMatch r s = isJust $ PCRE.match r (cs s) []
 (≈) = (=~)
 
 -- | Does raw PCRE matching (you probably shouldn't use this directly).
--- 
+--
 -- >>> :set -XOverloadedStrings
 -- >>> rawMatch [re|\w{2}|] "a a ab abc ba" 0 []
 -- Just [(4,6)]
@@ -202,6 +202,9 @@ subO r opts t s = fromMaybe s $ cs <$> fst <$> rawSub r t (cs s) 0 opts
 --
 -- >>> gsub [re|bad|] "xxxbad" "this is bad, right? bad" :: String
 -- "this is xxxbad, right? xxxbad"
+--
+-- >>> gsub [re|a|] "" "aaa" :: String
+-- ""
 gsub ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → r → a → a
 gsub r t s = gsubO r [] t s
 
@@ -209,11 +212,15 @@ gsub r t s = gsubO r [] t s
 gsubO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS, RegexReplacement r) ⇒ Regex → [PCREExecOption] → r → a → a
 gsubO r opts t s = cs $ loop 0 str
   where str = toSBS s
-        loop offset acc =
-          case rawSub r t acc offset opts of
+        loop offset acc
+          | offset >= l = acc
+          | otherwise = case rawSub r t acc offset opts of
             Just (result, newOffset) →
-              if newOffset == offset then acc else loop newOffset result
+              if newOffset == offset && l == BS.length result
+              then acc
+              else loop newOffset result
             _ → acc
+          where l = BS.length acc
 
 -- | Splits the string using the given regex.
 --
