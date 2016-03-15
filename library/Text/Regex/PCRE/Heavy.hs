@@ -1,7 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
 {-# LANGUAGE NoImplicitPrelude, UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, UnicodeSyntax #-}
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, CPP #-}
+#if __GLASGOW_HASKELL__ < 710
+{-# LANGUAGE OverlappingInstances #-}
+#endif
 
 -- | A usable regular expressions library on top of pcre-light.
 module Text.Regex.PCRE.Heavy (
