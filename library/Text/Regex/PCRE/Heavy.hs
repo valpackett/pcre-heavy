@@ -286,7 +286,7 @@ endQuoteMarker = "\\E"
 --
 -- >>> ("foo*bar"::String) =~ PCRE.compile (escape "foo*bar") []
 -- True
-escape ∷ (ConvertibleStrings a SBS, ConvertibleStrings SBS a) => a → a
+escape ∷ (ConvertibleStrings a SBS, ConvertibleStrings SBS a) ⇒ a → a
 escape = convertString . escapeSBS . convertString
   where escapeSBS s
             -- Handle the special case where \Q...\E doesn't work.
