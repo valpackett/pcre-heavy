@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
 {-# LANGUAGE NoImplicitPrelude, UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, UnicodeSyntax #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface, CPP #-}
 #if __GLASGOW_HASKELL__ < 710
 {-# LANGUAGE OverlappingInstances #-}
@@ -26,6 +27,8 @@ module Text.Regex.PCRE.Heavy (
   -- * QuasiQuoter
 , re
 , mkRegexQQ
+  -- * Building regexes
+, escape
   -- * Types and stuff from pcre-light
 , Regex
 , PCREOption
@@ -265,3 +268,31 @@ mkRegexQQ opts = QuasiQuoter
 -- | A QuasiQuoter for regular expressions that does a compile time check.
 re ∷ QuasiQuoter
 re = mkRegexQQ [utf8]
+
+-- Metacharacters used in PCRE syntax.  Taken from pcrepattern(3) man
+-- page.
+pcreMetachars ∷ SBS
+pcreMetachars = "\\^$.[|()?*+{"
+
+-- Start and end quote markers in PCRE syntax.
+startQuoteMarker, endQuoteMarker ∷ SBS
+startQuoteMarker = "\\Q"
+endQuoteMarker = "\\E"
+
+-- | Escapes the regex metacharacters in a string.  In other words,
+-- given a string, produces a regex that matches just that string (or
+-- case variations of that string, if case-insenstive matching is
+-- enabled).
+--
+-- >>> ("foo*bar"::String) =~ PCRE.compile (escape "foo*bar") []
+-- True
+escape ∷ (ConvertibleStrings a SBS, ConvertibleStrings SBS a) ⇒ a → a
+escape = convertString . escapeSBS . convertString
+  where escapeSBS s
+            -- Handle the special case where \Q...\E doesn't work.
+            | endQuoteMarker `BS.isInfixOf` s = BS.concatMap step s
+            -- Handle the typical case.
+            | otherwise = BS.concat [startQuoteMarker, s, endQuoteMarker]
+        step c
+            | c `BS.elem` pcreMetachars = BS.pack ['\\', c]
+            | otherwise = BS.singleton c
