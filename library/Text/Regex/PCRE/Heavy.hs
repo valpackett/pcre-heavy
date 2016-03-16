@@ -16,6 +16,7 @@ module Text.Regex.PCRE.Heavy (
 , scanRanges
 , scanRangesO
   -- * Replacement
+, RegexReplacement
 , sub
 , subO
 , gsub
@@ -139,18 +140,24 @@ scanRangesO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex �
 scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
   where str = toSBS s
 
+-- | Class of types that can serve as the replacement argument in the
+-- 'sub' family of functions.
 class RegexReplacement a where
   performReplacement ∷ SBS → [SBS] → a → SBS
 
+-- | A replacement string.
 instance {-# OVERLAPPABLE #-} ConvertibleStrings a SBS ⇒ RegexReplacement a where
   performReplacement _ _ to = cs to
 
+-- | A function mapping the matched string and groups to a replacement string.
 instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement (a → [a] → a) where
   performReplacement from groups replacer = cs $ replacer (cs from) (map cs groups)
 
+-- | A function mapping the matched string to a replacement string.
 instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement (a → a) where
   performReplacement from _ replacer = cs $ replacer (cs from)
 
+-- | A function mapping the matched groups to a replacement string.
 instance (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ RegexReplacement ([a] → a) where
   performReplacement _ groups replacer = cs $ replacer (map cs groups)
 
