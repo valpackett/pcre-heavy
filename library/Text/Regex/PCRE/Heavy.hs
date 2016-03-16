@@ -284,7 +284,7 @@ endQuoteMarker = "\\E"
 -- case variations of that string, if case-insenstive matching is
 -- enabled).
 --
--- >>> "foo*bar" =~ PCRE.compile (convertString $ escape "foo*bar") []
+-- >>> ("foo*bar"::String) =~ PCRE.compile (escape "foo*bar") []
 -- True
 escape ∷ (ConvertibleStrings a SBS, ConvertibleStrings SBS a) => a → a
 escape = convertString . escapeSBS . convertString
