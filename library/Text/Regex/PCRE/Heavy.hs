@@ -61,7 +61,7 @@ substr s (f, t) = BS.take (t - f) . BS.drop f $ s
 behead ∷ NE.NonEmpty a → (a, [a])
 behead l = (NE.head l, NE.tail l)
 
-reMatch ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → Bool
+reMatch ∷ ConvertibleStrings a SBS ⇒ Regex → a → Bool
 reMatch r s = isJust $ PCRE.match r (cs s) []
 
 -- | Checks whether a string matches a regex.
@@ -70,7 +70,7 @@ reMatch r s = isJust $ PCRE.match r (cs s) []
 -- >>> :set -XFlexibleContexts
 -- >>> "https://unrelenting.technology" =~ [re|^http.*|]
 -- True
-(=~), (≈) ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ a → Regex → Bool
+(=~), (≈) ∷ ConvertibleStrings a SBS ⇒ a → Regex → Bool
 (=~) = flip reMatch
 
 -- | Same as =~.
@@ -135,11 +135,11 @@ scanO r opts s = map behead $ fmap (cs . substr str) <$> unfoldr (nextMatch r op
 -- [((0,17),[(7,8),(9,14)]),((17,27),[(23,24),(25,27)])]
 --
 -- And just like 'scan', it's lazy.
-scanRanges ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → a → [((Int, Int), [(Int, Int)])]
+scanRanges ∷ ConvertibleStrings a SBS ⇒ Regex → a → [((Int, Int), [(Int, Int)])]
 scanRanges r s = scanRangesO r [] s
 
 -- | Exactly like 'scanRanges', but passes runtime options to PCRE.
-scanRangesO ∷ (ConvertibleStrings SBS a, ConvertibleStrings a SBS) ⇒ Regex → [PCREExecOption] → a → [((Int, Int), [(Int, Int)])]
+scanRangesO ∷ ConvertibleStrings a SBS ⇒ Regex → [PCREExecOption] → a → [((Int, Int), [(Int, Int)])]
 scanRangesO r opts s = map behead $ unfoldr (nextMatch r opts str) 0
   where str = toSBS s
 
