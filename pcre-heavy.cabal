@@ -14,7 +14,7 @@ description:
 category:        Web
 homepage:        https://github.com/myfreeweb/pcre-heavy
 author:          Greg V
-copyright:       2015 Greg V <greg@unrelenting.technology>
+copyright:       2015-2016 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
@@ -23,7 +23,7 @@ cabal-version:   >= 1.10
 extra-source-files:
     README.md
 tested-with:
-    GHC == 7.10.2
+    GHC == 8.0.1
 
 source-repository head
     type: git
